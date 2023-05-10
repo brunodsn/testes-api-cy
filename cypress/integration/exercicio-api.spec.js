@@ -1,123 +1,97 @@
-/// <reference types="cypress" />
+/// <reference types= "cypress" />
 import contrato from '../contracts/usuarios.contract'
 
 describe('Testes da Funcionalidade Usuários', () => {
      let token
      before(() => {
-         cy.token('fulano@qa.com', 'teste').then(tkn => { token = tkn })
+          cy.token('reginapupp_qa@ebac.com.br', 'teste').then(tkn => { token = tkn })
      });
 
-    it('Deve validar contrato de usuários', () => {
-         
-         cy.request('usuarios').then(response => {
-          return contrato.validateAsync(response.body)
-         })
-    });
+     it('Deve validar contrato de usuários', () => {
+          cy.request('usuarios').then(response => {
+               return contrato.validateAsync(response.body)
+          })
+     });
 
-    it('Deve listar usuários cadastrados', () => {
+     it('Deve listar usuários cadastrados', () => {
           cy.request({
-          method: 'GET',
-          url: 'usuarios'})
-          .then((response)=>{
-               expect(response.body.usuarios[0].nome).to.equal('Fulano da Silva')
+               method: 'GET',
+               url: 'usuarios'
+          }).then((response) => {
+               expect(response.body.usuarios[0].email).to.equal('reginapupp_qa@ebac.com.br')
                expect(response.status).to.equal(200)
+               expect(response.body).to.have.property('usuarios')
+               expect(response.duration).to.be.lessThan(12)
           })
-    });
+     });
 
-    it('Deve cadastrar um usuário com sucesso', () => {
-         
-         let usuario = `Usuário  ${Math.floor(Math.random() * 100000000)}`
-         var faker = require('faker');
-
-         cy.request({
-          method: 'POST',
-          url: 'usuarios',
-          body:{
-               "nome": usuario,
-               "email": faker.internet.email(),
-               "password": "teste",
-               "administrador": "true"},
-               headers: { authorization: token }
-             
-         }).then((response)=>{
-          expect(response.status).to.equal(201)
-          expect(response.body.message).to.equal('Cadastro realizado com sucesso')
-         })
-    });
-
-    it('Deve validar um usuário com email inválido', () => {
-        
-         let usuario = `Usuário  ${Math.floor(Math.random() * 100000000)}`
-         
-         cy.request({
-          method: 'POST',
-          url: 'usuarios',
-          headers: { authorization: token },
-          body:{
-               "nome": usuario,
-               "email": "email@email.com",
-               "password": "teste",
-               "administrador": "true"
-          },
-                failOnStatusCode: false
-             
-         }).then((response) =>{ 
-          expect(response.status).to.equal(400)
-          expect(response.body.message).to.equal('Este email já está sendo usado')
-          
-          })
-    });
-
-    it('Deve editar um usuário previamente cadastrado', () => {
-         
-         let usuario = `Usuário  ${Math.floor(Math.random() * 100000000)}`
-         var faker = require('faker');
-
-         cy.cadastrarUsuario(token, usuario, faker.internet.email(), "senha123", "true" )
-         .then(response => {
-          let id = response.body._id
-          
+     it('Deve cadastrar um usuário com sucesso', () => {
+          let usuario = `usuario` + `${Math.floor(Math.random() * 100000)}`
+          let email = `${usuario}@qa.com.br`
+          let senha = `teste ${Math.floor(Math.random() * 100000)}`
           cy.request({
-               method: 'PUT',
-               url: `usuarios/${id}`,
-               headers: { authorization: token },
+               method: 'POST',
+               url: 'usuarios',
                body: {
-                    "nome": "Usuário editado previamente",
-                    "email": faker.internet.email(),
-                    "password": "teste",
-                    "administrador": "true"
+                    "nome": usuario,
+                    "email": email,
+                    "password": senha,
+                    "administrador": 'true'
+               }
+          }).then((response) => {
+               expect(response.status).to.equal(201)
+               expect(response.body.message).to.equal('Cadastro realizado com sucesso')
+          })
+     });
+
+     it('Deve validar email inválido', () => {
+          cy.request({
+               method: 'POST',
+               url: 'login',
+               body: {
+                    "email": "brunodsn@ebac.com.br",
+                    "password": "124578$"
                },
-          }).then((response)=>{
-               expect(response.status).to.equal(200)
-               expect(response.body.message).to.equal('Registro alterado com sucesso')
+               failOnStatusCode: false
+          }).then((response) => {
+               expect(response.status).to.equal(401)
+               expect(response.body.message).to.equal('Email e/ou senha inválidos')
           })
-          
+     });
 
-         })
-    });
-
-    it('Deve deletar um usuário previamente cadastrado', () => {
-         
-        let usuario = `Usuário  ${Math.floor(Math.random() * 100000000)}`
-        var faker = require('faker');
-        cy.cadastrarUsuario(token, usuario, faker.internet.email(), "senha123", "true" )
-        .then(response => {
-          let id = response.body._id
-
-         cy.request({
-          method: 'DELETE',
-          url: `usuarios/${id}`,
-          headers: { authorization: token }
-          }).then(response =>{
-               expect(response.body.message).to.equal('Registro excluído com sucesso')
-               expect(response.status).to.equal(200)
+     it('Deve editar um usuário previamente cadastrado', () => {
+          cy.request('usuarios').then(response => {
+               let id = response.body.usuarios[0]._id
+               cy.request({
+                    method: 'PUT',
+                    url: `usuarios/${id}`,
+                    headers: {authorization: token},
+                    body:{
+                         "nome": "usuario88015",
+                         "email": "usuario88015@qa.com.br",
+                         "password": "teste 65365",
+                         "administrador": "true"
+                       }
+               }).then(response => {
+                    expect(response.body.message).to.equal('Registro alterado com sucesso')
+               })
           })
-        })
-         
-          
-         
-          
-               
-    });
+     });
 
-});
+     it('Deve deletar um usuário previamente cadastrado', () => {
+          let usuario = `usuario` + `${Math.floor(Math.random() * 100000)}`
+          let email = `${usuario}@qa.com.br`
+          cy.cadastrarUsuarios(token, usuario, email, 'teste', 'false')
+          .then(response => {
+               let id = response.body._id
+               cy.request({
+                    method: 'DELETE',
+                    url: `usuarios/${id}`,
+                    headers: { authorization: token}
+               }).then(response => {
+                    expect(response.body.message).to.equal('Registro excluído com sucesso')
+                    expect(response.status).to.equal(200)
+               })
+          })
+     });
+})

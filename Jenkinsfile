@@ -34,11 +34,11 @@ pipeline {
 
     }
 
-    stage('Realizar os testes') {
+    stage('Executar testes') {
 
       steps {
 
-        bat 'npm run cy:run'
+        bat 'NO_COLOR=1 npm run cy:run'
 
       }
 
